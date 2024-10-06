@@ -1,137 +1,118 @@
-function crosswordSolver(puzzle, words) {
-    let emptyPuzzle2D = puzzle.split('\n').map(row => row.split(''));
-    let filledPuzzle2D = emptyPuzzle2D.map(row => [...row]);
-    let wordPositions = [];
+let solutions = [];
 
-    // Find word positions
-    for (let i = 0; i < emptyPuzzle2D.length; i++) {
-        for (let j = 0; j < emptyPuzzle2D[i].length; j++) {
-            if (emptyPuzzle2D[i][j] === '1' || emptyPuzzle2D[i][j] === '2') {
-                // Check horizontal word
-                if (j === 0 || emptyPuzzle2D[i][j-1] === '.') {
-                    let length = 0;
-                    while (j + length < emptyPuzzle2D[i].length && emptyPuzzle2D[i][j+length] !== '.') {
-                        length++;
-                    }
-                    if (length > 1) {
-                        wordPositions.push({row: i, col: j, length, direction: 'horizontal'});
-                    }
-                }
-                // Check vertical word
-                if (i === 0 || emptyPuzzle2D[i-1][j] === '.') {
-                    let length = 0;
-                    while (i + length < emptyPuzzle2D.length && emptyPuzzle2D[i+length][j] !== '.') {
-                        length++;
-                    }
-                    if (length > 1) {
-                        wordPositions.push({row: i, col: j, length, direction: 'vertical'});
-                    }
-                }
-            }
-        }
-    }
-
-    // Sort word positions by length (descending)
-    wordPositions.sort((a, b) => b.length - a.length);
-
-    // Sort words by length (descending)
-    words.sort((a, b) => b.length - a.length);
-
-    if (wordPositions.length !== words.length) {
+function crosswordSolver(emptyPuzzle, words) {
+    if (typeof emptyPuzzle !== 'string' || emptyPuzzle.trim() === '') {
         console.log("Error");
         return;
     }
+    // Convert the puzzle string into a 2D array (split by new lines)
+    let matrix = emptyPuzzle.split('\n');
+    
+    // Try to solve the puzzle by placing all the words
+    solvePuzzle(matrix, words, 0);
 
-    function canPlaceWord(word, row, col, direction) {
-        if (direction === 'horizontal') {
-            for (let i = 0; i < word.length; i++) {
-                if (filledPuzzle2D[row][col+i] !== '0' && filledPuzzle2D[row][col+i] !== '1' && 
-                    filledPuzzle2D[row][col+i] !== '2' && filledPuzzle2D[row][col+i] !== word[i]) {
-                    return false;
-                }
-            }
-        } else {
-            for (let i = 0; i < word.length; i++) {
-                if (filledPuzzle2D[row+i][col] !== '0' && filledPuzzle2D[row+i][col] !== '1' && 
-                    filledPuzzle2D[row+i][col] !== '2' && filledPuzzle2D[row+i][col] !== word[i]) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    function placeWord(word, row, col, direction) {
-        if (direction === 'horizontal') {
-            for (let i = 0; i < word.length; i++) {
-                filledPuzzle2D[row][col+i] = word[i];
-            }
-        } else {
-            for (let i = 0; i < word.length; i++) {
-                filledPuzzle2D[row+i][col] = word[i];
-            }
-        }
-    }
-
-    function solve(index) {
-        if (index === wordPositions.length) {
-            return true; // All words placed successfully
-        }
-
-        const position = wordPositions[index];
-        for (let i = 0; i < words.length; i++) {
-            const word = words[i];
-            if (word.length === position.length && canPlaceWord(word, position.row, position.col, position.direction)) {
-                placeWord(word, position.row, position.col, position.direction);
-                words.splice(i, 1); // Remove the word from the list
-
-                if (solve(index + 1)) {
-                    return true; // Solution found
-                }
-
-                // Backtrack
-                words.splice(i, 0, word); // Put the word back
-                placeWord('0'.repeat(word.length), position.row, position.col, position.direction);
-            }
-        }
-
-        return false; // No valid word found for this position
-    }
-
-    if (solve(0)) {
-        console.log(filledPuzzle2D.map(row => row.join('')).join('\n'));
+    // If we found a solution, return it, otherwise return an error message
+    if (solutions.length === 1) {
+        console.log(solutions.join('\n').split(',').join('\n'))
+        return;
     } else {
         console.log("Error");
+        return;
     }
 }
 
-// Test the function
-const puzzle = `...1...........
-..1000001000...
-...0....0......
-.1......0...1..
-.0....100000000
-100000..0...0..
-.0.....1001000.
-.0.1....0.0....
-.10000000.0....
-.0.0......0....
-.0.0.....100...
-...0......0....
-..........0....`
-const words = [
-  'sun',
-  'sunglasses',
-  'suncream',
-  'swimming',
-  'bikini',
-  'beach',
-  'icecream',
-  'tan',
-  'deckchair',
-  'sand',
-  'seaside',
-  'sandals',
-]
+function solvePuzzle(matrix, words, index) {
+    // Base case: if all words have been placed
+    if (index === words.length) {
+        if (isValidPuzzle(matrix)) {
+            // Save the solved matrix as a solution
+            solutions.push(matrix.map(row => row.slice())); // Deep copy the matrix
+        }
+        return; // End the function
+    }
 
-crosswordSolver(puzzle, words)
+    let currentWord = words[index]; // Get the current word to place
+    let rows = matrix.length; // Number of rows in the puzzle
+    let cols = matrix[0].length; // Number of columns in the puzzle
+
+    // Try placing the word in every position, both horizontally and vertically
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            // Try to place the word horizontally
+            let tempMatrix = placeWordHorizontally([...matrix], currentWord, row, col);
+            if (tempMatrix[0] !== "Error") {
+                solvePuzzle(tempMatrix, words, index + 1); // Recursively place the next word
+            }
+
+            // Try to place the word vertically
+            tempMatrix = placeWordVertically([...matrix], currentWord, row, col);
+            if (tempMatrix[0] !== "Error") {
+                solvePuzzle(tempMatrix, words, index + 1); // Recursively place the next word
+            }
+        }
+    }
+}
+
+function placeWordHorizontally(matrix, word, row, col) {
+    let availableSpace = matrix[0].length - col; // Check how many spaces are left in the row
+    if (availableSpace < word.length) {
+        matrix[0] = "Error"; // Not enough space to place the word
+        return matrix;
+    }
+
+    // Try to place each letter of the word in the row
+    for (let i = 0; i < word.length; i++) { 
+        let char = matrix[row][col + i]; // Get the current character in the puzzle
+        if (char === '1' || char === '2' || char === '0' || char === word[i]) {
+            // If the spot is valid, replace it with the word's letter
+            let before = matrix[row].slice(0,col+i) 
+            let insert = word [i] 
+            let after = matrix[row].slice(col+i+1)
+            matrix[row] = before + insert + after 
+        } else {
+            matrix[0] = "Error"; // Conflict, can't place the word here
+            return matrix;
+        }
+    }
+    return matrix; // Return the matrix with the word placed
+}
+
+function placeWordVertically(matrix, word, row, col) {
+    let availableSpace = matrix.length - row; // Check how many rows are left
+    if (availableSpace < word.length) {
+        matrix[0] = "Error"; // Not enough space to place the word
+        return matrix;
+    }
+
+    // Try to place each letter of the word in the column
+    for (let i = 0; i < word.length; i++) {
+        let char = matrix[row + i][col]; // Get the current character in the puzzle
+        if (char === '1' || char === '2' || char === '0' || char === word[i]) {
+            // If the spot is valid, replace it with the word's letter
+            let before = matrix[row +i] . slice ( 0 ,col ) 
+            let insert = word [i] 
+            let after = matrix [row + i ] . slice( col + 1 )
+            matrix[row + i] = before + insert + after
+        } else {
+            matrix[0] = "Error"; // Conflict, can't place the word here
+            return matrix;
+        }
+    }
+    return matrix; // Return the matrix with the word placed
+}
+
+function isValidPuzzle(matrix) {
+    // Check if the puzzle is fully filled with no '1', '2', or '0' left
+    for (let row of matrix) {
+        if (row.includes('1') || row.includes('2') || row.includes('0')) {
+            return false; // Puzzle is not complete
+        }
+    }
+    return true; // Puzzle is valid
+}
+
+// Example usage:
+const puzzle = '2001\n0..0\n2000\n0..0'
+const words = ['casa', 'alan', 'ciao', 'anta']
+
+crosswordSolver(puzzle, words); 
