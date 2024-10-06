@@ -2,7 +2,7 @@ function crosswordSolver(puzzle, words) {
     let emptyPuzzle2D = puzzle.split('\n').map(row => row.split(''));
     let filledPuzzle2D = emptyPuzzle2D.map(row => [...row]);
     let wordPositions = [];
-    
+
     // Find word positions
     for (let i = 0; i < emptyPuzzle2D.length; i++) {
         for (let j = 0; j < emptyPuzzle2D[i].length; j++) {
@@ -106,7 +106,32 @@ function crosswordSolver(puzzle, words) {
 }
 
 // Test the function
-const puzzle = '2001\n0..0\n1000\n0..0'
-const words = ['casa', 'alan', 'ciao', 'anta']
+const puzzle = `...1...........
+..1000001000...
+...0....0......
+.1......0...1..
+.0....100000000
+100000..0...0..
+.0.....1001000.
+.0.1....0.0....
+.10000000.0....
+.0.0......0....
+.0.0.....100...
+...0......0....
+..........0....`
+const words = [
+  'sun',
+  'sunglasses',
+  'suncream',
+  'swimming',
+  'bikini',
+  'beach',
+  'icecream',
+  'tan',
+  'deckchair',
+  'sand',
+  'seaside',
+  'sandals',
+]
 
 crosswordSolver(puzzle, words)
